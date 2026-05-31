@@ -17,7 +17,7 @@ import {
 /**
  * Discriminator helper for `ReferenceObject`
  *
- * @param property
+ * @param obj
  */
 export function isReference(obj: object): obj is OpenApiReferenceObject {
   return !isNullish(obj) && Object.hasOwn(obj, '$ref');
