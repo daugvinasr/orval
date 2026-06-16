@@ -20,10 +20,7 @@ import {
   pascal,
   toObjectString,
 } from '@orval/core';
-import {
-  generateFetchHeader,
-  generateRequestFunction as generateFetchRequestFunction,
-} from '@orval/fetch';
+import { generateFetchHeader } from '@orval/fetch';
 
 import { getHasSignal, vueUnRefParams, vueWrapTypeWithMaybeRef } from './utils';
 
@@ -70,23 +67,6 @@ export const ANGULAR_HTTP_DEPENDENCIES = [
     dependency: 'rxjs/operators',
   },
 ] as const satisfies readonly GeneratorDependency[];
-
-export const generateQueryRequestFunction = (
-  verbOptions: GeneratorVerbOptions,
-  options: GeneratorOptions,
-  isVue: boolean,
-  isAngularClient = false,
-) => {
-  if (
-    isAngularClient ||
-    options.context.output.httpClient === OutputHttpClient.ANGULAR
-  ) {
-    return generateAngularHttpRequestFunction(verbOptions, options);
-  }
-  return options.context.output.httpClient === OutputHttpClient.AXIOS
-    ? generateAxiosRequestFunction(verbOptions, options, isVue)
-    : generateFetchRequestFunction(verbOptions, options);
-};
 
 export const generateAngularHttpRequestFunction = (
   {
@@ -310,12 +290,13 @@ export const generateAxiosRequestFunction = (
   }: GeneratorVerbOptions,
   { route: _route, context }: GeneratorOptions,
   isVue: boolean,
+  hasQueryV5 = false,
 ) => {
   let props = _props;
   let route = _route;
 
   if (isVue) {
-    props = vueWrapTypeWithMaybeRef(_props);
+    props = vueWrapTypeWithMaybeRef(_props, hasQueryV5);
   }
 
   if (context.output.urlEncodeParameters) {
@@ -421,7 +402,7 @@ export const generateAxiosRequestFunction = (
         ? `options${context.output.optionsParamRequired ? '' : '?'}: SecondParameter<typeof ${mutator.name}>,`
         : ''
     }${getSignalDefinition({ hasSignal, hasSignalParam })}) => {
-      ${isVue ? vueUnRefParams(props) : ''}
+      ${isVue ? vueUnRefParams(props, hasQueryV5) : ''}
       ${bodyForm}
       return ${mutator.name}<${response.definition.success || 'unknown'}>(
       ${mutatorConfig},
@@ -463,7 +444,7 @@ export const generateAxiosRequestFunction = (
   const httpRequestFunctionImplementation = `${override.query.shouldExportHttpClient ? 'export ' : ''}const ${operationName} = (\n    ${queryProps} ${optionsArgs} ): Promise<AxiosResponse<${
     response.definition.success || 'unknown'
   }>> => {
-    ${isVue ? vueUnRefParams(props) : ''}
+    ${isVue ? vueUnRefParams(props, hasQueryV5) : ''}
     ${bodyForm}
     return axios${
       isSyntheticDefaultImportsAllowed ? '' : '.default'
