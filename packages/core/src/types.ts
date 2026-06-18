@@ -497,6 +497,13 @@ export interface FakerMockOptions extends CommonMockOptions {
   // `components/schemas` (one `get<SchemaName>Mock` per schema). Defaults to
   // `false` — schema factories are opt-in to preserve existing output.
   schemas?: boolean;
+  // Package specifier for importing the schema-level faker factories (the
+  // `get<SchemaName>Mock` functions emitted when `schemas: true`). When set,
+  // it is used verbatim as the schema factory import path instead of appending
+  // `/index.faker` to `schemas.importPath`. This lets consumers expose fakers
+  // through a dedicated barrel separate from the production type barrel.
+  // Requires `schemas.importPath` to also be set.
+  schemasImportPath?: string;
   // Emit per-operation response mock factories (the historical behavior).
   // Defaults to `true`. Set to `false` together with `schemas: true` to get
   // only the consolidated schema factories.
@@ -1349,11 +1356,14 @@ export type GeneratorOperations = Record<string, GeneratorOperation>;
 // A single generator's accumulated mock output, keyed by the generator's
 // `OutputMockType`. Writers iterate over `GeneratorTarget.mockOutputs` to
 // emit one file per entry (e.g. `<file>.msw.ts` and `<file>.faker.ts`).
+export type StrictMockSchemaKind = 'object' | 'alias' | 'binary';
+
 export interface GeneratorMockOutput {
   type: OutputMockType;
   implementation: string;
   imports: GeneratorImport[];
   strictMockSchemaTypeNames?: string[];
+  strictMockSchemaKinds?: Record<string, StrictMockSchemaKind>;
 }
 
 export interface GeneratorMockOutputFull {
@@ -1365,6 +1375,7 @@ export interface GeneratorMockOutputFull {
   };
   imports: GeneratorImport[];
   strictMockSchemaTypeNames?: string[];
+  strictMockSchemaKinds?: Record<string, StrictMockSchemaKind>;
 }
 
 export interface GeneratorTarget {
@@ -1533,6 +1544,7 @@ export interface ClientMockGeneratorBuilder {
   imports: GeneratorImport[];
   implementation: ClientMockGeneratorImplementation;
   strictMockSchemaTypeNames?: string[];
+  strictMockSchemaKinds?: Record<string, StrictMockSchemaKind>;
 }
 
 export type ClientMockBuilder = (
@@ -1698,6 +1710,7 @@ export type ResReqTypesValue = ScalarValue & {
 export interface FinalizeMockImplementationOptions {
   mockOptions?: Pick<MockOptions, 'required' | 'nonNullable'>;
   strictSchemaTypeNames?: readonly string[];
+  strictMockSchemaKinds?: Readonly<Record<string, StrictMockSchemaKind>>;
 }
 
 export interface WriteSpecBuilder {
