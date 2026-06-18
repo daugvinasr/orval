@@ -148,6 +148,34 @@ export default defineConfig({
       },
     },
   },
+  hookMutator: {
+    output: {
+      target: '../generated/vue-query/hook-mutator/endpoints.ts',
+      schemas: '../generated/vue-query/hook-mutator/model',
+      client: 'vue-query',
+      httpClient: 'axios',
+      mock: false,
+      override: {
+        mutator: {
+          path: '../mutators/use-custom-instance-vue.ts',
+          name: 'useCustomInstance',
+        },
+        query: {
+          useQuery: true,
+          useInfinite: true,
+          useInfiniteQueryParam: 'limit',
+        },
+      },
+      clean: true,
+      formatter: 'prettier',
+    },
+    input: {
+      target: '../specifications/petstore.yaml',
+      override: {
+        transformer: '../transformers/add-version.js',
+      },
+    },
+  },
   httpClientFetchWithCustomFetch: {
     output: {
       target:

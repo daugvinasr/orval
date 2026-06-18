@@ -123,7 +123,6 @@ export const generateAngularHttpRequestFunction = (
       hasSignal,
       hasSignalParam,
       isExactOptionalPropertyTypes,
-      isVue: false,
       isAngular: context.output.httpClient === OutputHttpClient.ANGULAR,
     });
 
@@ -336,7 +335,6 @@ export const generateAxiosRequestFunction = (
       hasSignal,
       hasSignalParam,
       isExactOptionalPropertyTypes,
-      isVue,
     });
 
     const bodyDefinition = body.definition.replace('[]', String.raw`\[\]`);
@@ -386,7 +384,9 @@ export const generateAxiosRequestFunction = (
           isRequestOptions && mutator.hasSecondArg
             ? `options${context.output.optionsParamRequired ? '' : '?'}: SecondParameter<ReturnType<typeof ${mutator.name}>>,`
             : ''
-        }${getSignalDefinition({ hasSignal, hasSignalParam })}) => {${bodyForm}
+        }${getSignalDefinition({ hasSignal, hasSignalParam })}) => {
+      ${vueUnRefParams(props, hasQueryV5)}
+      ${bodyForm}
         return ${operationName}(
           ${mutatorConfig},
           ${requestOptions});
@@ -430,7 +430,6 @@ export const generateAxiosRequestFunction = (
     isExactOptionalPropertyTypes,
     hasSignal,
     hasSignalParam,
-    isVue: isVue,
   });
 
   const optionsArgs = generateRequestOptionsArguments({

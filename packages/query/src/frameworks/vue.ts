@@ -131,6 +131,9 @@ export const createVueAdapter = ({
     const queryKeyType = hasQueryV5
       ? `DataTag<QueryKey, TData${hasQueryV5WithDataTagError ? ', TError' : ''}>`
       : 'QueryKey';
+    // `unref`, not the v5 `resolve`: this runs on both v4 and v5, and the query
+    // options object is a plain ref (never a getter), so `unref` is sufficient
+    // and stays valid on Vue < 3.3 where `toValue` doesn't exist.
     return `${queryResultVarName}.queryKey = unref(${queryOptionsVarName}).queryKey as ${queryKeyType};
 
   return ${queryResultVarName};`;
@@ -195,6 +198,9 @@ export const createVueAdapter = ({
     generateInvalidateCall,
     uniqueInvalidates,
   }: MutationOnSuccessContext): string {
+    // The `unref` calls below resolve user-supplied mutation options (a ref,
+    // never a getter), so `unref` is correct here and on Vue < 3.3 — unlike the
+    // request params, these are not wrapped in `MaybeRefOrGetter`.
     const invalidateCalls = uniqueInvalidates
       .map((t) => generateInvalidateCall(t))
       .join('\n');
