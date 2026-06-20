@@ -123,7 +123,6 @@ export const generateAngularHttpRequestFunction = (
       hasSignal,
       hasSignalParam,
       isExactOptionalPropertyTypes,
-      isVue: false,
       isAngular: context.output.httpClient === OutputHttpClient.ANGULAR,
     });
 
@@ -290,12 +289,13 @@ export const generateAxiosRequestFunction = (
   }: GeneratorVerbOptions,
   { route: _route, context }: GeneratorOptions,
   isVue: boolean,
+  hasQueryV5 = false,
 ) => {
   let props = _props;
   let route = _route;
 
   if (isVue) {
-    props = vueWrapTypeWithMaybeRef(_props);
+    props = vueWrapTypeWithMaybeRef(_props, hasQueryV5);
   }
 
   if (context.output.urlEncodeParameters) {
@@ -335,7 +335,6 @@ export const generateAxiosRequestFunction = (
       hasSignal,
       hasSignalParam,
       isExactOptionalPropertyTypes,
-      isVue,
     });
 
     const bodyDefinition = body.definition.replace('[]', String.raw`\[\]`);
@@ -385,7 +384,9 @@ export const generateAxiosRequestFunction = (
           isRequestOptions && mutator.hasSecondArg
             ? `options${context.output.optionsParamRequired ? '' : '?'}: SecondParameter<ReturnType<typeof ${mutator.name}>>,`
             : ''
-        }${getSignalDefinition({ hasSignal, hasSignalParam })}) => {${bodyForm}
+        }${getSignalDefinition({ hasSignal, hasSignalParam })}) => {
+      ${vueUnRefParams(props, hasQueryV5)}
+      ${bodyForm}
         return ${operationName}(
           ${mutatorConfig},
           ${requestOptions});
@@ -401,7 +402,7 @@ export const generateAxiosRequestFunction = (
         ? `options${context.output.optionsParamRequired ? '' : '?'}: SecondParameter<typeof ${mutator.name}>,`
         : ''
     }${getSignalDefinition({ hasSignal, hasSignalParam })}) => {
-      ${isVue ? vueUnRefParams(props) : ''}
+      ${isVue ? vueUnRefParams(props, hasQueryV5) : ''}
       ${bodyForm}
       return ${mutator.name}<${response.definition.success || 'unknown'}>(
       ${mutatorConfig},
@@ -429,7 +430,6 @@ export const generateAxiosRequestFunction = (
     isExactOptionalPropertyTypes,
     hasSignal,
     hasSignalParam,
-    isVue: isVue,
   });
 
   const optionsArgs = generateRequestOptionsArguments({
@@ -443,7 +443,7 @@ export const generateAxiosRequestFunction = (
   const httpRequestFunctionImplementation = `${override.query.shouldExportHttpClient ? 'export ' : ''}const ${operationName} = (\n    ${queryProps} ${optionsArgs} ): Promise<AxiosResponse<${
     response.definition.success || 'unknown'
   }>> => {
-    ${isVue ? vueUnRefParams(props) : ''}
+    ${isVue ? vueUnRefParams(props, hasQueryV5) : ''}
     ${bodyForm}
     return axios${
       isSyntheticDefaultImportsAllowed ? '' : '.default'

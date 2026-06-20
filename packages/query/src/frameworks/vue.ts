@@ -23,7 +23,11 @@ import type {
   QueryReturnTypeContext,
 } from '../framework-adapter';
 import { QueryType } from '../query-options';
-import { vueUnRefParams, vueWrapTypeWithMaybeRef } from '../utils';
+import {
+  getVueReactivity,
+  vueUnRefParams,
+  vueWrapTypeWithMaybeRef,
+} from '../utils';
 
 export const createVueAdapter = ({
   hasVueQueryV4,
@@ -49,7 +53,7 @@ export const createVueAdapter = ({
   hasQueryV5WithRequiredContextOnSuccess,
 
   transformProps(props: GetterProps): GetterProps {
-    return vueWrapTypeWithMaybeRef(props);
+    return vueWrapTypeWithMaybeRef(props, hasQueryV5);
   },
 
   shouldDestructureNamedPathParams(): boolean {
@@ -61,11 +65,12 @@ export const createVueAdapter = ({
     queryProperties: string,
     httpClient: OutputHttpClient,
   ): string {
-    // Vue with fetch: unref each prop
+    // Vue with fetch: resolve each prop (toValue on v5 to support getters)
     if (httpClient === OutputHttpClient.FETCH && queryProperties) {
+      const { resolve } = getVueReactivity(hasQueryV5);
       return queryProperties
         .split(',')
-        .map((prop) => `unref(${prop})`)
+        .map((prop) => `${resolve}(${prop})`)
         .join(',');
     }
     return queryProperties;
@@ -76,17 +81,18 @@ export const createVueAdapter = ({
     queryParam: string,
     httpClient: OutputHttpClient,
   ): string {
+    const { resolve } = getVueReactivity(hasQueryV5);
     return props
       .map((param) => {
         // Vue does NOT destructure named path params (keeps param.name)
         if (param.name === 'params') {
-          return `{...unref(params), '${queryParam}': pageParam ?? unref(params)?.['${queryParam}']}`;
+          return `{...${resolve}(params), '${queryParam}': pageParam ?? ${resolve}(params)?.['${queryParam}']}`;
         }
 
         // Fetch-style request functions accept plain values, but axios-style
-        // accept MaybeRef<T> so they unref MaybeRef values internally.
+        // accept MaybeRef(OrGetter)<T> so they unwrap the values internally.
         return httpClient === OutputHttpClient.FETCH
-          ? `unref(${param.name})`
+          ? `${resolve}(${param.name})`
           : param.name;
       })
       .join(',');
@@ -125,6 +131,9 @@ export const createVueAdapter = ({
     const queryKeyType = hasQueryV5
       ? `DataTag<QueryKey, TData${hasQueryV5WithDataTagError ? ', TError' : ''}>`
       : 'QueryKey';
+    // `unref`, not the v5 `resolve`: this runs on both v4 and v5, and the query
+    // options object is a plain ref (never a getter), so `unref` is sufficient
+    // and stays valid on Vue < 3.3 where `toValue` doesn't exist.
     return `${queryResultVarName}.queryKey = unref(${queryOptionsVarName}).queryKey as ${queryKeyType};
 
   return ${queryResultVarName};`;
@@ -143,6 +152,7 @@ export const createVueAdapter = ({
   getUnrefStatements(props: GetterProps): string {
     return vueUnRefParams(
       props.filter((prop) => prop.type === GetterPropType.NAMED_PATH_PARAMS),
+      hasQueryV5,
     );
   },
 
@@ -152,10 +162,11 @@ export const createVueAdapter = ({
   ): string {
     if (params.length === 0) return '';
     if (!isObject(options) || !Object.hasOwn(options, 'enabled')) {
+      const { resolve } = getVueReactivity(hasQueryV5);
       return `enabled: computed(() => ${params
         .map(
           ({ name }) =>
-            `unref(${name}) !== null && unref(${name}) !== undefined`,
+            `${resolve}(${name}) !== null && ${resolve}(${name}) !== undefined`,
         )
         .join(' && ')}),`;
     }
@@ -187,6 +198,9 @@ export const createVueAdapter = ({
     generateInvalidateCall,
     uniqueInvalidates,
   }: MutationOnSuccessContext): string {
+    // The `unref` calls below resolve user-supplied mutation options (a ref,
+    // never a getter), so `unref` is correct here and on Vue < 3.3 — unlike the
+    // request params, these are not wrapped in `MaybeRefOrGetter`.
     const invalidateCalls = uniqueInvalidates
       .map((t) => generateInvalidateCall(t))
       .join('\n');
@@ -232,7 +246,7 @@ export const createVueAdapter = ({
     options: GeneratorOptions,
   ): string {
     return options.context.output.httpClient === OutputHttpClient.AXIOS
-      ? generateAxiosRequestFunction(verbOptions, options, true)
+      ? generateAxiosRequestFunction(verbOptions, options, true, hasQueryV5)
       : generateFetchRequestFunction(verbOptions, options);
   },
 

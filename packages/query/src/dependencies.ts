@@ -251,39 +251,40 @@ const VUE_QUERY_DEPENDENCIES_V3: GeneratorDependency[] = [
   },
 ];
 
-const VUE_QUERY_DEPENDENCIES: GeneratorDependency[] = [
-  {
-    exports: [
-      { name: 'useQuery', values: true },
-      { name: 'useInfiniteQuery', values: true },
-      { name: 'useMutation', values: true },
-      { name: 'useQueryClient', values: true },
-      { name: 'UseQueryOptions' },
-      { name: 'UseInfiniteQueryOptions' },
-      { name: 'UseMutationOptions' },
-      { name: 'QueryFunction' },
-      { name: 'MutationFunction' },
-      { name: 'MutationFunctionContext' },
-      { name: 'QueryKey' },
-      { name: 'UseQueryReturnType' },
-      { name: 'UseInfiniteQueryReturnType' },
-      { name: 'InfiniteData' },
-      { name: 'UseMutationReturnType' },
-      { name: 'DataTag' },
-      { name: 'QueryClient' },
-      { name: 'InvalidateOptions' },
-    ],
-    dependency: '@tanstack/vue-query',
-  },
-  {
-    exports: [
-      { name: 'unref', values: true },
-      { name: 'MaybeRef' },
-      { name: 'computed', values: true },
-    ],
-    dependency: 'vue',
-  },
-];
+const VUE_QUERY_TANSTACK_DEPENDENCY: GeneratorDependency = {
+  exports: [
+    { name: 'useQuery', values: true },
+    { name: 'useInfiniteQuery', values: true },
+    { name: 'useMutation', values: true },
+    { name: 'useQueryClient', values: true },
+    { name: 'UseQueryOptions' },
+    { name: 'UseInfiniteQueryOptions' },
+    { name: 'UseMutationOptions' },
+    { name: 'QueryFunction' },
+    { name: 'MutationFunction' },
+    { name: 'MutationFunctionContext' },
+    { name: 'QueryKey' },
+    { name: 'UseQueryReturnType' },
+    { name: 'UseInfiniteQueryReturnType' },
+    { name: 'InfiniteData' },
+    { name: 'UseMutationReturnType' },
+    { name: 'DataTag' },
+    { name: 'QueryClient' },
+    { name: 'InvalidateOptions' },
+  ],
+  dependency: '@tanstack/vue-query',
+};
+
+const VUE_REACTIVITY_DEPENDENCY: GeneratorDependency = {
+  exports: [
+    { name: 'computed', values: true },
+    { name: 'unref', values: true },
+    { name: 'toValue', values: true },
+    { name: 'MaybeRef' },
+    { name: 'MaybeRefOrGetter' },
+  ],
+  dependency: 'vue',
+};
 
 const getSolidQueryImports = (
   prefix: 'use' | 'create',
@@ -391,10 +392,10 @@ export const isVueQueryV3 = (packageJson: PackageJson | undefined) => {
 };
 
 export const getVueQueryDependencies: ClientDependenciesBuilder = (
-  hasGlobalMutator: boolean,
-  hasParamsSerializerOptions: boolean,
+  hasGlobalMutator,
+  hasParamsSerializerOptions,
   packageJson,
-  httpClient?: OutputHttpClient,
+  httpClient,
 ) => {
   const hasVueQueryV3 = isVueQueryV3(packageJson);
 
@@ -403,7 +404,9 @@ export const getVueQueryDependencies: ClientDependenciesBuilder = (
       ? AXIOS_DEPENDENCIES
       : []),
     ...(hasParamsSerializerOptions ? PARAMS_SERIALIZER_DEPENDENCIES : []),
-    ...(hasVueQueryV3 ? VUE_QUERY_DEPENDENCIES_V3 : VUE_QUERY_DEPENDENCIES),
+    ...(hasVueQueryV3
+      ? VUE_QUERY_DEPENDENCIES_V3
+      : [VUE_QUERY_TANSTACK_DEPENDENCY, VUE_REACTIVITY_DEPENDENCY]),
   ];
 };
 

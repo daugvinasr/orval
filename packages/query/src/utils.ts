@@ -112,7 +112,25 @@ const normalizeMutator = (
   return undefined;
 };
 
-export function vueWrapTypeWithMaybeRef(props: GetterProps): GetterProps {
+/**
+ * Vue Query v5 requires Vue 3.3+, where `MaybeRefOrGetter<T>` (a superset of
+ * `MaybeRef<T>` that also accepts `() => T` getters) and `toValue()` exist.
+ */
+export interface VueReactivity {
+  wrapper: 'MaybeRef' | 'MaybeRefOrGetter';
+  resolve: 'unref' | 'toValue';
+}
+
+export const getVueReactivity = (hasQueryV5: boolean): VueReactivity =>
+  hasQueryV5
+    ? { wrapper: 'MaybeRefOrGetter', resolve: 'toValue' }
+    : { wrapper: 'MaybeRef', resolve: 'unref' };
+
+export function vueWrapTypeWithMaybeRef(
+  props: GetterProps,
+  hasQueryV5: boolean,
+): GetterProps {
+  const { wrapper } = getVueReactivity(hasQueryV5);
   return props.map((prop) => {
     const [paramName, paramType] = prop.implementation.split(':');
     if (!paramType) return prop;
@@ -122,20 +140,24 @@ export function vueWrapTypeWithMaybeRef(props: GetterProps): GetterProps {
     const [type, defaultValue] = paramType.split('=');
     return {
       ...prop,
-      implementation: `${name}: MaybeRef<${type.trim()}>${
+      implementation: `${name}: ${wrapper}<${type.trim()}>${
         defaultValue ? ` = ${defaultValue}` : ''
       }`,
     };
   });
 }
 
-export const vueUnRefParams = (props: GetterProps): string => {
+export const vueUnRefParams = (
+  props: GetterProps,
+  hasQueryV5: boolean,
+): string => {
+  const { resolve } = getVueReactivity(hasQueryV5);
   return props
     .map((prop) => {
       if (prop.type === GetterPropType.NAMED_PATH_PARAMS) {
-        return `const ${prop.destructured} = unref(${prop.name});`;
+        return `const ${prop.destructured} = ${resolve}(${prop.name});`;
       }
-      return `${prop.name} = unref(${prop.name});`;
+      return `${prop.name} = ${resolve}(${prop.name});`;
     })
     .join('\n');
 };
