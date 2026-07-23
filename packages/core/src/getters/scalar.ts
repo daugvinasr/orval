@@ -18,6 +18,15 @@ import { getObject } from './object';
 type SchemaEnumValue = string | number | boolean | null;
 
 /**
+ * Render a schema value (a `const` or an `enum` member) as a TypeScript
+ * literal. String values are quoted and escaped, everything else is
+ * stringified as-is (numbers, booleans, null).
+ */
+function schemaValueToLiteral(value: SchemaEnumValue): string {
+  return isString(value) ? `'${jsStringLiteralEscape(value)}'` : `${value}`;
+}
+
+/**
  * Returns true when a schema describes a raw binary string scalar — i.e. one
  * that getScalar's `case 'string':` branch would coerce to `Blob` outside a
  * url-encoded context (see the formDataContext.urlEncoded gate below). Shared
@@ -84,7 +93,7 @@ export function getScalar({
   const schemaExamples = item.examples as Parameters<
     typeof resolveExampleRefs
   >[0];
-  const schemaConst = item.const as string | undefined;
+  const schemaConst = item.const as SchemaEnumValue | undefined;
   const schemaFormat = item.format as string | undefined;
   const schemaNullable = item.nullable as boolean | undefined;
 
@@ -125,14 +134,15 @@ export function getScalar({
       let isEnum = false;
 
       if (enumItems) {
-        value = enumItems.map((enumItem) => `${enumItem}`).join(' | ');
+        value = enumItems.map(schemaValueToLiteral).join(' | ');
         isEnum = true;
       }
 
       value += nullable;
 
       if (schemaConst !== undefined) {
-        value = schemaConst;
+        value = schemaValueToLiteral(schemaConst);
+        isEnum = false;
       }
 
       return {
@@ -156,13 +166,13 @@ export function getScalar({
         enumItems &&
         !(enumItems.includes(true) && enumItems.includes(false))
       ) {
-        value = enumItems.map((enumItem) => `${enumItem}`).join(' | ');
+        value = enumItems.map(schemaValueToLiteral).join(' | ');
       }
 
       value += nullable;
 
       if (schemaConst !== undefined) {
-        value = schemaConst;
+        value = schemaValueToLiteral(schemaConst);
       }
 
       return {
@@ -198,14 +208,7 @@ export function getScalar({
       let isEnum = false;
 
       if (enumItems) {
-        value = enumItems
-          .map((enumItem) =>
-            isString(enumItem)
-              ? `'${jsStringLiteralEscape(enumItem)}'`
-              : `${enumItem}`,
-          )
-          .filter(Boolean)
-          .join(` | `);
+        value = enumItems.map(schemaValueToLiteral).filter(Boolean).join(` | `);
 
         isEnum = true;
       }
@@ -242,8 +245,9 @@ export function getScalar({
 
       value += nullable;
 
-      if (schemaConst) {
-        value = `'${jsStringLiteralEscape(schemaConst)}'`;
+      if (schemaConst !== undefined) {
+        value = schemaValueToLiteral(schemaConst);
+        isEnum = false;
       }
 
       return {
@@ -327,11 +331,7 @@ export function getScalar({
 
       if (enumItems) {
         const value = enumItems
-          .map((enumItem) =>
-            isString(enumItem)
-              ? `'${jsStringLiteralEscape(enumItem)}'`
-              : String(enumItem),
-          )
+          .map(schemaValueToLiteral)
           .filter(Boolean)
           .join(` | `);
 

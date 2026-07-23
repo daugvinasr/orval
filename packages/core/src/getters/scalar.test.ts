@@ -296,3 +296,69 @@ describe('getScalar (string const value escaping #3505)', () => {
     expect(result.value).toBe("'Asia/Tokyo'");
   });
 });
+
+describe('getScalar (const combined with enum, FastAPI/Pydantic Literal)', () => {
+  it('handles integer enum + const without treating it as an enum', () => {
+    const schema = {
+      type: 'integer',
+      enum: [1],
+      const: 1,
+    } as OpenApiSchemaObject;
+
+    const result = getScalar({ item: schema, name: 'v', context });
+
+    expect(result.value).toBe('1');
+    expect(result.isEnum).toBe(false);
+  });
+
+  it('handles number enum + const without treating it as an enum', () => {
+    const schema = {
+      type: 'number',
+      enum: [1.5],
+      const: 1.5,
+    } as OpenApiSchemaObject;
+
+    const result = getScalar({ item: schema, name: 'v', context });
+
+    expect(result.value).toBe('1.5');
+    expect(result.isEnum).toBe(false);
+  });
+
+  it('handles string enum + const without treating it as an enum', () => {
+    const schema = {
+      type: 'string',
+      enum: ['a'],
+      const: 'a',
+    } as OpenApiSchemaObject;
+
+    const result = getScalar({ item: schema, name: 'v', context });
+
+    expect(result.value).toBe("'a'");
+    expect(result.isEnum).toBe(false);
+  });
+
+  it('handles boolean enum + const', () => {
+    const schema = {
+      type: 'boolean',
+      enum: [true],
+      const: true,
+    } as OpenApiSchemaObject;
+
+    const result = getScalar({ item: schema, name: 'v', context });
+
+    expect(result.value).toBe('true');
+    expect(result.isEnum).toBe(false);
+  });
+
+  it('renders an empty-string const instead of dropping it', () => {
+    const schema = {
+      type: 'string',
+      const: '',
+    } as OpenApiSchemaObject;
+
+    const result = getScalar({ item: schema, name: 'v', context });
+
+    expect(result.value).toBe("''");
+    expect(result.isEnum).toBe(false);
+  });
+});

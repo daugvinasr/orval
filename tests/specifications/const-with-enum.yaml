@@ -1,0 +1,52 @@
+openapi: 3.1.0
+info:
+  title: const-with-enum
+  description: |-
+    A property that carries both `enum` and `const` (as FastAPI / Pydantic v2
+    emit for a `Literal[...]` field) must generate the single const literal and
+    must not crash `getTypeConstEnum` with a non-string value.
+  version: 1.0.0
+paths:
+  /thing:
+    get:
+      operationId: getThing
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Thing'
+components:
+  schemas:
+    Thing:
+      type: object
+      required:
+        - name
+        - int
+        - num
+        - str
+        - bool
+      properties:
+        name:
+          type: string
+        int:
+          type: integer
+          enum:
+            - 1
+          const: 1
+        num:
+          type: number
+          enum:
+            - 1.5
+          const: 1.5
+        str:
+          type: string
+          enum:
+            - a
+          const: a
+        bool:
+          type: boolean
+          enum:
+            - true
+          const: true

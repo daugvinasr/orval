@@ -125,21 +125,14 @@ export type TestSchema = typeof TestSchemaValue;
     });
     const want: GeneratorSchema[] = [
       {
-        name: 'ConstEnumKind',
-        model:
-          "export type ConstEnumKind = typeof ConstEnumKind[keyof typeof ConstEnumKind];\n\n\nexport const ConstEnumKind = {\n  A: 'A',\n} as const;\n",
-        imports: [],
-        dependencies: [],
-      },
-      {
         name: 'ConstEnum',
         model: `export const ConstEnumValue = {
-  kind: ConstEnumKind,
+  kind: 'A',
 } as const;
 export type ConstEnum = typeof ConstEnumValue;
 `,
-        imports: [{ name: 'ConstEnumKind', isConstant: true }],
-        dependencies: ['ConstEnumKind'],
+        imports: [],
+        dependencies: [],
         schema,
       },
     ];

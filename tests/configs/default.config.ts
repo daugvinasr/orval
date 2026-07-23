@@ -887,4 +887,13 @@ export default defineConfig({
       formatter: 'prettier',
     },
   },
+  'const-with-enum': {
+    input: '../specifications/const-with-enum.yaml',
+    output: {
+      target: '../generated/default/const-with-enum/endpoints.ts',
+      schemas: '../generated/default/const-with-enum/model',
+      clean: true,
+      formatter: 'prettier',
+    },
+  },
 });
