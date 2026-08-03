@@ -288,6 +288,18 @@ export default defineConfig({
       target: '../specifications/form-url-encoded.yaml',
     },
   },
+  formUrlEncodedDeepObject: {
+    output: {
+      target: '../generated/fetch/form-url-encoded-deep-object/endpoints.ts',
+      schemas: '../generated/fetch/form-url-encoded-deep-object/model',
+      client: 'fetch',
+      clean: true,
+      formatter: 'prettier',
+    },
+    input: {
+      target: '../specifications/form-url-encoded-deep-object.yaml',
+    },
+  },
   formUrlEncodedCustomFetch: {
     output: {
       target:

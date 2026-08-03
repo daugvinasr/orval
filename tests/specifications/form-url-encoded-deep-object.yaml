@@ -1,0 +1,153 @@
+openapi: '3.1.0'
+info:
+  version: 1.0.0
+  title: 'Url-encoded body with `style: deepObject` encoding'
+paths:
+  # `encoding.style: deepObject` must emit bracketed keys
+  # (`metadata[order_id]=6735`) instead of a single JSON-stringified value
+  # (#3798)
+  /accounts:
+    post:
+      operationId: postAccounts
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                metadata:
+                  type: object
+                  properties:
+                    order_id:
+                      type: string
+                      example: '6735'
+            encoding:
+              metadata:
+                style: deepObject
+                explode: true
+      responses:
+        '200':
+          description: ok
+  /accounts/nested:
+    post:
+      operationId: postAccountsNested
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - 'name'
+                - 'metadata'
+              properties:
+                name:
+                  type: string
+                metadata:
+                  type: object
+                  required:
+                    - 'order_id'
+                  properties:
+                    order_id:
+                      type: string
+                    priority:
+                      type: integer
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                    shipping:
+                      type: object
+                      properties:
+                        city:
+                          type: string
+                        express:
+                          type: boolean
+                    lines:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          sku:
+                            type: string
+                          quantity:
+                            type: integer
+                    # nullability declared through composition, not `nullable`
+                    note:
+                      oneOf:
+                        - type: string
+                        - type: 'null'
+                    # numeric through composition: still needs toString()
+                    retries:
+                      oneOf:
+                        - type: integer
+                        - type: 'null'
+                    # nested array has no key to expand under -> stays JSON
+                    matrix:
+                      type: array
+                      items:
+                        type: array
+                        items:
+                          type: string
+                # object without a declared shape: entries are expanded at
+                # runtime
+                attributes:
+                  type: object
+                  additionalProperties:
+                    type: string
+                # map of arrays: elements are indexed the same way a declared
+                # array property is, rather than collapsing to JSON
+                labels:
+                  type: object
+                  additionalProperties:
+                    type: array
+                    items:
+                      type: string
+                # map of objects: only the key is unknown, so the declared value
+                # shape still expands instead of collapsing to JSON
+                warehouses:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      city:
+                        type: string
+                      capacity:
+                        type: integer
+                # value shape genuinely undeclared -> dispatched on at runtime
+                freeform:
+                  type: object
+                  additionalProperties: true
+                # deepObject is undefined for arrays, so this stays unchanged
+                codes:
+                  type: array
+                  items:
+                    type: string
+                # no encoding entry → unchanged JSON.stringify behaviour
+                untouched:
+                  type: object
+                  properties:
+                    foo:
+                      type: string
+            encoding:
+              metadata:
+                style: deepObject
+                explode: true
+              attributes:
+                style: deepObject
+                explode: true
+              labels:
+                style: deepObject
+                explode: true
+              warehouses:
+                style: deepObject
+                explode: true
+              freeform:
+                style: deepObject
+                explode: true
+              codes:
+                style: deepObject
+                explode: true
+      responses:
+        '200':
+          description: ok
