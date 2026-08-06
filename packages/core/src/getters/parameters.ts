@@ -20,7 +20,9 @@ export function getParameters({
   const result: GetterParameters = { path: [], query: [], header: [] };
   for (const p of parameters) {
     if (isReference(p)) {
-      const { schema, imports } = resolveRef(p, context);
+      const { schema, imports } = resolveRef(p, context, [], {
+        resolveNestedSchema: false,
+      });
       const parameter = schema as OpenApiParameterObject;
 
       const location = parameter.in;

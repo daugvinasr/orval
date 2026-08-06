@@ -55,7 +55,9 @@ interface WithOptionalExamples {
 
 const REF_NOT_FOUND_PREFIX = 'Oops... 🍻. Ref not found';
 
-/* eslint-disable @typescript-eslint/no-unnecessary-type-parameters -- TSchema constrains return type for callers (e.g. resolveRef<OpenApiExampleObject>) */
+export interface ResolveRefOptions {
+  resolveNestedSchema?: boolean;
+}
 
 /**
  * Recursively resolves a `$ref` in an OpenAPI document, following
@@ -70,6 +72,7 @@ export function resolveRef<TSchema extends object = OpenApiComponentsObject>(
   schema: OpenApiComponentsObject | OpenApiReferenceObject,
   context: ContextSpec,
   imports: GeneratorImport[] = [],
+  options: ResolveRefOptions = {},
 ): {
   schema: TSchema;
   imports: GeneratorImport[];
@@ -80,6 +83,7 @@ export function resolveRef<TSchema extends object = OpenApiComponentsObject>(
 
   // the schema is referring to another object
   if (
+    options.resolveNestedSchema !== false &&
     isObject(nestedSchema) &&
     isReference(nestedSchema) &&
     typeof nestedSchema.$ref === 'string'
@@ -135,10 +139,12 @@ export function resolveRef<TSchema extends object = OpenApiComponentsObject>(
     throw new Error(`${REF_NOT_FOUND_PREFIX}: ${refPath}`);
   }
 
-  return resolveRef<TSchema>(currentSchema, { ...context }, [
-    ...imports,
-    { name, schemaName: originalName },
-  ]);
+  return resolveRef<TSchema>(
+    currentSchema,
+    { ...context },
+    [...imports, { name, schemaName: originalName }],
+    options,
+  );
 }
 
 /**

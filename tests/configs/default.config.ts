@@ -887,4 +887,13 @@ export default defineConfig({
       formatter: 'prettier',
     },
   },
+  'parameter-ref-schema-ref': {
+    input: '../specifications/parameter-ref-schema-ref.yaml',
+    output: {
+      target: '../generated/default/parameter-ref-schema-ref/endpoints.ts',
+      schemas: '../generated/default/parameter-ref-schema-ref/model',
+      clean: true,
+      formatter: 'prettier',
+    },
+  },
 });
